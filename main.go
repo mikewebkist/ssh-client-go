@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-type password string
-
-func (p password) Password(user string) (password string, err error) {
-	return string(p), nil
-}
-
 func main() {
 	fmt.Print("Remote host? (Default=localhost): ")
 	server := scanConfig()
@@ -32,14 +26,9 @@ func main() {
 	fmt.Print("Password?: ")
 	p := scanConfig()
 
-	var pass = password(p)
 	config := &ssh.ClientConfig{
 		User: user,
-		Auth: []ssh.ClientAuth{
-			// ClientAuthPassword wraps a ClientPassword implementation
-			// in a type that implements ClientAuth.
-			ssh.ClientAuthPassword(pass),
-		},
+		Auth: []ssh.AuthMethod{ssh.Password(p)},
 	}
 	conn, err := ssh.Dial("tcp", server, config)
 	if err != nil {
