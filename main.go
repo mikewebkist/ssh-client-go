@@ -21,8 +21,11 @@ func main() {
 		port = "22"
 	}
 	server = server + ":" + port
-	fmt.Print("UserName?: ")
+	fmt.Print("Username? (Default=root): ")
 	user := scanConfig()
+	if user == "" {
+		user = "root"
+	}
 	fmt.Print("Password?: ")
 	p := scanConfig()
 
@@ -48,28 +51,20 @@ func main() {
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 	in, _ := session.StdinPipe()
-
-	// Set up terminal modes
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-
-	// Request pseudo terminal
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		log.Fatalf("request for pseudo terminal failed: %s", err)
-	}
+	out, _ := session.StdoutPipe()
 
 	// Start remote shell
 	if err := session.Shell(); err != nil {
 		log.Fatalf("failed to start shell: %s", err)
 	}
 
+	fmt.Fprint(in, "unset HISTFILE\n")
+
 	// Accepting commands
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		str, _ := reader.ReadString('\n')
+		fmt.Printf("[%s@%s] $ ", user, server)
 		fmt.Fprint(in, str)
 	}
 
