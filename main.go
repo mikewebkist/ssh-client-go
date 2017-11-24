@@ -77,7 +77,7 @@ func main() {
 	}
 
 	// Request pseudo terminal
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
+	if err := session.RequestPty("xterm", 40, 80, modes); err != nil {
 		log.Fatalf("request for pseudo terminal failed: %s", err)
 	}
 
