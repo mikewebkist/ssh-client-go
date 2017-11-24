@@ -2,14 +2,22 @@ package main
 
 import (
 	"bufio"
-	"code.google.com/p/go.crypto/ssh"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
 	"strings"
+
+	"golang.org/x/crypto/ssh"
 )
 
 func main() {
+	user, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Print("Remote host? (Default=localhost): ")
 	server := scanConfig()
 	if server == "" {
@@ -22,13 +30,25 @@ func main() {
 	}
 	server = server + ":" + port
 	fmt.Print("UserName?: ")
-	user := scanConfig()
-	fmt.Print("Password?: ")
-	p := scanConfig()
+	userName := scanConfig()
+
+	key, err := ioutil.ReadFile(user.HomeDir + "/.ssh/id_rsa")
+	if err != nil {
+		log.Fatalf("unable to read private key: %v", err)
+	}
+
+	// Create the Signer for this private key.
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		log.Fatalf("unable to parse private key: %v", err)
+	}
 
 	config := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{ssh.Password(p)},
+		User: userName,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	conn, err := ssh.Dial("tcp", server, config)
 	if err != nil {
